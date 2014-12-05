@@ -22,3 +22,16 @@ class DirectoryDescriptor(FileDescriptor):
             name, inode = struct.unpack("%dsI" % (FILENAMELEN,), data[0:(FILENAMELEN + 4)])
             name = name.strip('\x00')
             yield name, inode
+
+    def unlink(self, filename):
+	length = self.getlength()
+	numentries = length / (FILENAMELEN + 4)  # a directory entry is a filename and an integer for the inode number
+        for i in range(0, numentries):
+            data = self.read(FILENAMELEN + 4)
+            name, inode = struct.unpack("%dsI" % (FILENAMELEN,), data[0:(FILENAMELEN + 4)])
+            name = name.strip('\x00')
+	    self.position -= len(data) 
+	    if (name == filename):
+		self.setlength(self.getlength() - len(data))
+	    else:
+		self.write(data)	

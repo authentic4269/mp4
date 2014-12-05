@@ -29,6 +29,11 @@ class FileDescriptor(object):
         inodeobject = self._getinode()
         return inodeobject.filesize
 
+    def setlength(self, newlen):
+	inodeobject = self._getinode()
+	inodeobject.filesize = newlen
+	InodeMap.inodemap.update_inode(inodeobject.id, inodeobject.serialize())
+
     def read(self, readlength):
         inodeobject = self._getinode()
         data = inodeobject.read(self.position, readlength)

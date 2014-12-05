@@ -19,12 +19,16 @@ class SegmentManagerClass:
     # write the given data to a free block in the current segment.
     # if no free block exists, find another segment with a free block in it
     def write_to_newblock(self, data):
-	while (self.currentseg.write_to_newblock(data) < 0):
-		self.flush()
-		if (self.segcounter == NUMSEGMENTS - 1):
-        		raise FileSystemException("Disk is out of space!")
-		self.segcounter = self.segcounter + 1
-		self.currentseg = SegmentClass(self.segcounter)
+	while (True):
+		res = self.currentseg.write_to_newblock(data)
+		if (res < 0):
+			self.flush()
+			if (self.segcounter == NUMSEGMENTS - 1):
+        			raise FileSystemException("Disk is out of space!")
+			self.segcounter = self.segcounter + 1
+			self.currentseg = SegmentClass(self.segcounter)
+		else:
+			return res
         pass
 
     # read the requested block if it is in memory, if not, read it from disk

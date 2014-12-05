@@ -77,9 +77,42 @@ class LFSClass:
         inodeobject = Inode(str=Segment.segmentmanager.blockread(inodeblocknumber))
         return inodeobject.filesize, inodeobject.isDirectory
 
+    def rmdir(self, pathname):
+	(sz, isdir) = self.stat(pathname)
+	if (not isdir):
+		raise FileSystemException(pathname + " is not a directory. Remove it with rm.")
+        inodenumber = self.searchfiledir(pathname)
+	descriptor = DirectoryDescriptor(inodenumber)
+	entries = descriptor.enumerate()
+	i = 0
+	for (k,v) in entries:
+		i += 1
+	if (i > 0):
+		raise FileSystemException(pathname + " is not empty. Can only delete empty directories.")
+        parentdirname = find_parent_name(pathname)
+        parentdirinodenumber = self.searchfiledir(parentdirname)
+        if parentdirinodenumber is None:
+            raise FileSystemException("Parent Directory Does Not Exist")
+        self.remove_directory_entry(parentdirinodenumber, find_filename(pathname))
+
     # delete the given file
     def unlink(self, pathname):
-        # XXX - do this tomorrow! after the meteor shower!
+	(sz,isdir) = self.stat(pathname)
+	if (isdir):
+		raise FileSystemException(pathname + " is a directory. Remove it with rmdir.")
+	fileinodenumber = self.searchfiledir(pathname)
+        if fileinodenumber is None:
+            print "File does not exist " + pathname
+	    return
+
+
+        # now append the <filename, inode> entry to the parent directory
+        parentdirname = find_parent_name(pathname)
+        parentdirinodenumber = self.searchfiledir(parentdirname)
+        if parentdirinodenumber is None:
+            raise FileSystemException("Parent Directory Does Not Exist")
+        self.remove_directory_entry(parentdirinodenumber, find_filename(pathname))
+
         pass
 
     # write all in memory data structures to disk
@@ -110,31 +143,24 @@ class LFSClass:
         # XXX - do this tomorrow! after the meteor shower!
 	nextid = 1
 	nextpathentry = 0
-	pathentries = path.split("/")
+	pathentries = path[1:].split("/")
+	print pathentries
+	if (pathentries[0] == ""):
+		return nextid
 	while (nextpathentry < len(pathentries)):
-		curfd = FileDescriptor(nextid))
-		if (curfd.isDirectory()):
-			entries = DirectoryDescriptor(nextid).enumerate()
-			found = 0
-			for (name, inode) in entries:
-				if (name == pathentries[nextpathentry]):
-					    nextid = inode
-					    found = 1
-					    if (nextpathentry == len(pathentries)-1):
-						return inode
-					    else:
-						nextpathentry = nextpathentry + 1
-					    	break
-			if (found == 0):
-				print "file " + name + " not found"
-				return None
-		else:
-			if (nextpathentry == len(pathentries)-1 && pathentries[nextpathentry == pathentries[len(pathentries)-1]):
-				print "file " + name + " found"	
-				return nextid
-			else:
-				print "file " + name + " not found"
-			 	return None
+		curfd = DirectoryDescriptor(nextid)
+		entries = curfd.enumerate()
+		found = 0
+		for (name, inode) in entries:
+			if (name == pathentries[nextpathentry]):
+				    nextid = inode
+				    found = 1
+				    nextpathentry = nextpathentry + 1
+				    break
+		if (found == 0):
+			print "file " + path + " not found"
+			return None
+	return nextid
         pass
 
     # add the new directory entry to the data blocks,
@@ -142,5 +168,9 @@ class LFSClass:
     # and update the inode map
     def append_directory_entry(self, dirinode, filename, newinode):
         dirinode.write(dirinode.filesize, struct.pack("%dsI" % FILENAMELEN, filename, newinode.id))
+
+    def remove_directory_entry(self, dirinodenum, filename):
+	dir = DirectoryDescriptor(dirinodenum)
+	dir.unlink(filename)	
 
 filesystem = None

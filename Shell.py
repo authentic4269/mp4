@@ -108,11 +108,19 @@ class Shell:
         LFS.filesystem.sync()
 
     def rm(self, args):
-        # XXX - do this tomorrow! after the meteor shower!
+	if len(args) != 2:
+            print "Usage: rm filename"
+            return
+	LFS.filesystem.unlink(canonicalize(args[1], self.currentDirectory))
+	
         pass
 
     def rmdir(self, args):
-        # XXX - do this tomorrow! after the meteor shower!
+        if len(args) != 2:
+            print "Usage: rm dirname"
+            return
+	LFS.filesystem.rmdir(canonicalize(args[1], self.currentDirectory))
+	
         pass
 
     def quit(self, args):
