@@ -1,3 +1,13 @@
+Mitchell Vogel
+mjv58
+
+I completed all the required tasks except for the segment cleaning. 
+
+I tested manually, by running my code with a variety of commands trying to
+break it. 
+
+
+
 CS4410 MP4: Log-Structured Filesystem
 =======================================
 

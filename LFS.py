@@ -118,8 +118,10 @@ class LFSClass:
     # write all in memory data structures to disk
     def sync(self):
 	(data, num) = InodeMap.inodemap.save_inode_map(getmaxinode())
+	dat = Inode()
+	dat.write(0, data) 
 	# replace this with segmentmanager.write_to_newblock after implementing that method
-	location = Segment.segmentmanager.currentseg.write_to_newblock(data)
+	location = Segment.segmentmanager.write_to_newblock(dat.serialize())
 	if (location < 0):
 		print "failed to write inodemap to disk"
 		os._exit(1)
@@ -144,7 +146,6 @@ class LFSClass:
 	nextid = 1
 	nextpathentry = 0
 	pathentries = path[1:].split("/")
-	print pathentries
 	if (pathentries[0] == ""):
 		return nextid
 	while (nextpathentry < len(pathentries)):
@@ -158,7 +159,6 @@ class LFSClass:
 				    nextpathentry = nextpathentry + 1
 				    break
 		if (found == 0):
-			print "file " + path + " not found"
 			return None
 	return nextid
         pass

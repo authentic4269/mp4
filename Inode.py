@@ -7,6 +7,7 @@ from InodeMap import InodeMapClass
 from Constants import BLOCKSIZE
 
 NUMDIRECTBLOCKS = 100 # can have as many as 252 and still fit an Inode in a 1024 byte block
+NUMINDIRECTBLOCKS = BLOCKSIZE / 4 # sizeof(int)
 inodeidpool = 1  # 1 is reserved for the root inode
 
 def getmaxinode():
@@ -28,6 +29,11 @@ class Inode:
                 self.fileblocks[i] = struct.unpack("I", str[0:4])[0]
                 str = str[4:]
             self.indirectblock = struct.unpack("I", str[0:4])[0]
+	    self.indirectblocks = [0] * NUMINDIRECTBLOCKS
+	    indirect_dat = Segment.segmentmanager.blockread(self.indirectblock)
+	    for i in range(0, NUMINDIRECTBLOCKS):
+		self.indirectblocks[i] = struct.unpack("I", indirect_dat[0:4])[0]
+		indirect_dat = indirect_dat[4:]
             str = str[4:]
             self.isDirectory = struct.unpack("?", str[0])[0]
         else:
@@ -35,7 +41,13 @@ class Inode:
             inodeidpool += 1
             self.filesize = 0
             self.fileblocks = [0] * NUMDIRECTBLOCKS
-            self.indirectblock = 0
+            self.indirectblocks = [0] * NUMINDIRECTBLOCKS
+
+	    ib = ""
+            for i in range(0, NUMINDIRECTBLOCKS):
+                ib += struct.pack("I", self.indirectblocks[i])
+	    self.indirectblock = Segment.segmentmanager.write_to_newblock(ib)
+
             self.isDirectory = isdirectory
             # write the new inode to disk
             InodeMap.inodemap.update_inode(self.id, self.serialize())
@@ -61,15 +73,15 @@ class Inode:
             # place this block in one of the direct data blocks
             self.fileblocks[blockoffset] = blockaddress
         else:
-            # XXX - do this after the meteor shower!
+	    self.indirectblocks[blockoffset - NUMDIRECTBLOCKS] = blockaddress
             pass
 
     def _datablockexists(self, blockoffset):
         if blockoffset < len(self.fileblocks):
             return self.fileblocks[blockoffset] != 0
         else:
-            # XXX - do this after the meteor shower!
-            pass
+		return self.indirectblocks[blockoffset - NUMDIRECTBLOCKS] != 0
+                pass
 
     # given the number of a data block inside a file, i.e. 0 for
     # the first block, 1 for the second and so forth, returns
@@ -78,8 +90,7 @@ class Inode:
         if blockoffset < len(self.fileblocks):
             blockid = self.fileblocks[blockoffset]
         else:
-            # XXX - do this after the meteor shower!
-            pass
+		blockid = self.indirectblocks[blockoffset - NUMDIRECTBLOCKS]
         return Segment.segmentmanager.blockread(blockid)
 
     # perform a read of the file/directory pointed to by

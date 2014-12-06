@@ -131,7 +131,6 @@ class SegmentClass:
             if not self.superblock.blockinuse[i]:
                 if len(data) > BLOCKSIZE:
                     print "Assertion error 2: data being written to segment is not the right size (%d != %d)" % (len(data), len(self.blocks[i]))
-                    print data
                     os._exit(1)
                 # update the block data
                 self.blocks[i] = data + self.blocks[i][len(data):]
